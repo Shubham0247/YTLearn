@@ -171,6 +171,8 @@ VARIATION_TOKEN: {variation_token}
                 if answer_index == -1 and q.get('answer') in options:
                     answer_index = options.index(q['answer'])
                 if answer_index < 0 or answer_index >= len(options):
+                    # If parsing failed, try to recover by choosing the most likely option via heuristics
+                    # Here we skip to avoid false positives instead of marking incorrect items as correct
                     continue
                 indexed_options = list(enumerate(options))
                 random.shuffle(indexed_options)
@@ -186,6 +188,9 @@ VARIATION_TOKEN: {variation_token}
         # If more than 10 questions parsed, sample 10
         if len(normalized_questions) > 10:
             normalized_questions = random.sample(normalized_questions, 10)
+
+        # Filter out any malformed items to avoid always-correct behavior
+        normalized_questions = [q for q in normalized_questions if isinstance(q.get('correct_index'), int) and 0 <= q['correct_index'] < len(q.get('options', []))]
 
         return {
             "quiz_questions": normalized_questions,

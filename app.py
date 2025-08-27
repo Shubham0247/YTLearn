@@ -374,11 +374,13 @@ def display_quiz(results):
     # Create a unique key for this question
     q_key = f"q_{st.session_state.current_question}"
     
-    # Display radio buttons for options
-    user_answer = st.radio(
+    # Display radio buttons for options (use indices to avoid string-equality pitfalls)
+    option_indices = list(range(len(options)))
+    user_choice_index = st.radio(
         "Select your answer:",
-        options,
-        key=q_key
+        option_indices,
+        format_func=lambda i: options[i],
+        key=q_key,
     )
     
     # Check answer button
@@ -386,21 +388,28 @@ def display_quiz(results):
     with col1:
         if st.button("Submit Answer", key=f"submit_{st.session_state.current_question}"):
             # Store user's answer
-            st.session_state.user_answers[st.session_state.current_question] = user_answer
+            st.session_state.user_answers[st.session_state.current_question] = user_choice_index
             
             # Check if answer is correct
-            is_correct = False
-            if correct_text is not None:
-                is_correct = (user_answer == correct_text)
-            elif correct_index is not None and 0 <= correct_index < len(options):
-                is_correct = (options.index(user_answer) == correct_index)
+            # Ensure we have a valid correct_index; if missing, derive from correct_text
+            if (correct_index is None or not isinstance(correct_index, int) or not (0 <= correct_index < len(options))) and isinstance(correct_text, str):
+                try:
+                    correct_index = options.index(correct_text)
+                except ValueError:
+                    correct_index = None
+
+            is_correct = isinstance(user_choice_index, int) and isinstance(correct_index, int) and user_choice_index == correct_index
 
             if is_correct:
                 st.session_state.score += 1
                 st.session_state.feedback = "✅ Correct!"
             else:
                 # Compute friendly correct label
-                friendly_correct = correct_text if correct_text is not None else (options[correct_index] if isinstance(correct_index, int) and 0 <= correct_index < len(options) else "(unavailable)")
+                friendly_correct = (
+                    options[correct_index]
+                    if isinstance(correct_index, int) and 0 <= correct_index < len(options)
+                    else (correct_text if isinstance(correct_text, str) else "(unavailable)")
+                )
                 st.session_state.feedback = f"❌ Incorrect. Correct answer: {friendly_correct}"
             
             # Show next question button
