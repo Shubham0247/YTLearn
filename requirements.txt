@@ -1,0 +1,11 @@
+langgraph
+langchain
+langchain-groq
+langchain-tavily
+langchain-community
+langchain-openai
+langchain-huggingface
+streamlit
+python-dotenv
+youtube-transcript-api
+yt-dlp
